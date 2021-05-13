@@ -6,6 +6,7 @@
 
 #include <bluetooth/bluetooth.h>
 
+// use lowest interval possible (6ms)
 static struct bt_le_per_adv_param per_adv_param = {
 	.interval_min = 0x0006,
 	.interval_max = 0x0006,
@@ -16,6 +17,7 @@ static uint8_t mfg_data[] = { 0xff, 0xff, 0x00 };
 static uint8_t test_data[14] = {0xff, 0x00, 0x12, 0x13, 0xff, 0xff, 0x00, 0x12, 0x13, 0xff,
 								0xff, 0x00, 0x13, 0x13};
 
+// use 240 byte payload for testing
 static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
@@ -29,12 +31,6 @@ static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
-	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
-	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
-	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
-};
-
-static const struct bt_data ad2[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
@@ -80,12 +76,6 @@ void main(void)
 		return;
 	}
 
-	// err = bt_le_per_adv_set_data(adv, ad, ARRAY_SIZE(ad));
-	// if (err) {
-	// 	printk("Failed (err %d)\n", err);
-	// 	return;
-	// }
-
 	/* Enable Periodic Advertising */
 	err = bt_le_per_adv_start(adv);
 	if (err) {
@@ -103,19 +93,6 @@ void main(void)
 
 	while (true) {
 		k_sleep(K_SECONDS(1));
-
-		// mfg_data[2]++;
-		// printk("Stopping advertising\n");
-		// bt_le_per_adv_stop(adv);
-		// if (err) {
-		// 	printk("Failed to stop ext (err %d)\n", err);
-		// 	return;
-		// }
-		// err = bt_le_ext_adv_stop(adv);
-		// if (err) {
-		// 	printk("Failed to stop per (err %d)\n", err);
-		// 	return;
-		// }
 
 		printk("Set Periodic Advertising Data...");
         err = bt_le_per_adv_set_data(adv, ad, ARRAY_SIZE(ad));
