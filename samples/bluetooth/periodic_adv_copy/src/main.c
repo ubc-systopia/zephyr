@@ -13,11 +13,10 @@ static struct bt_le_per_adv_param per_adv_param = {
 	.options = BT_LE_ADV_OPT_USE_TX_POWER | BT_LE_ADV_OPT_EXT_ADV,
 };
 
-static uint8_t mfg_data[] = { 0xff, 0xff, 0x00 };
 static uint8_t test_data[14] = {0xff, 0x00, 0x12, 0x13, 0xff, 0xff, 0x00, 0x12, 0x13, 0xff,
 								0xff, 0x00, 0x13, 0x13};
 
-// use 240 byte payload for testing
+// use 248 byte payload for testing
 static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
@@ -34,6 +33,7 @@ static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
 	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 14),
+	BT_DATA(BT_DATA_MANUFACTURER_DATA, test_data, 10),
 };
 
 static void adv_sent_cb(struct bt_le_ext_adv *adv,

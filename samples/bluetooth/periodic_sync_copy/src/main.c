@@ -17,10 +17,11 @@ static bool         per_adv_found;
 static bt_addr_le_t per_addr;
 static uint8_t      per_sid;
 
+// global variables for testing
 static uint64_t time_stamp;
-static uint64_t another_time_stamp;
+static uint64_t start_time_stamp;
 static uint32_t		count;
-static uint32_t sync_lost;
+static uint32_t num_sync_lost;
 
 static K_SEM_DEFINE(sem_per_adv, 0, 1);
 static K_SEM_DEFINE(sem_per_sync, 0, 1);
@@ -74,6 +75,12 @@ static const char *phy2str(uint8_t phy)
 	}
 }
 
+void logData() {
+	printk("count: %d\n", count);
+	printk("time_stamp: %llu\n", k_ticks_to_ms_floor64(time_stamp));
+}
+
+// extended scan callback
 static void scan_recv(const struct bt_le_scan_recv_info *info,
 		      struct net_buf_simple *buf)
 {
@@ -123,10 +130,6 @@ static void sync_cb(struct bt_le_per_adv_sync *sync,
 	       bt_le_per_adv_sync_get_index(sync), le_addr,
 	       info->interval, info->interval * 5 / 4, phy2str(info->phy));
 
-	//time_stamp = (uint64_t)k_cycle_get_32();
-	// another_time_stamp = (uint64_t)k_cycle_get_32();
-	// //printk("time_stamp: %04x\n", time_stamp);
-	// printk("another_time_stamp: %llu\n", another_time_stamp);
 	k_sem_give(&sem_per_sync);
 }
 
@@ -143,6 +146,7 @@ static void term_cb(struct bt_le_per_adv_sync *sync,
 	k_sem_give(&sem_per_sync_lost);
 }
 
+// recieve sync callback
 static void recv_cb(struct bt_le_per_adv_sync *sync,
 		    const struct bt_le_per_adv_sync_recv_info *info,
 		    struct net_buf_simple *buf)
@@ -153,15 +157,17 @@ static void recv_cb(struct bt_le_per_adv_sync *sync,
 	bt_addr_le_to_str(info->addr, le_addr, sizeof(le_addr));
 	bin2hex(buf->data, buf->len, data_str, sizeof(data_str));
 
-	printk("PER_ADV_SYNC[%u]: [DEVICE]: %s, tx_power %i, "
-	       "RSSI %i, CTE %u, data length %u, data: %s\n",
-	       bt_le_per_adv_sync_get_index(sync), le_addr, info->tx_power,
-	       info->rssi, info->cte_type, buf->len, data_str);
+	// printk("PER_ADV_SYNC[%u]: [DEVICE]: %s, tx_power %i, "
+	//        "RSSI %i, CTE %u, data length %u, data: %s\n",
+	//        bt_le_per_adv_sync_get_index(sync), le_addr, info->tx_power,
+	//        info->rssi, info->cte_type, buf->len, data_str);
 	
 	count = count + buf->len;
-	printk("count: %d\n", count);
-	time_stamp = (uint64_t)k_cycle_get_32() - another_time_stamp; 
-	printk("time_stamp: %llu\n", k_ticks_to_ms_floor64(time_stamp));
+	time_stamp = (uint64_t)k_cycle_get_32() - start_time_stamp; 
+
+	// printk("count: %d\n", count);
+	// printk("time_stamp: %llu\n", k_ticks_to_ms_floor64(time_stamp));
+
 }
 
 static struct bt_le_per_adv_sync_cb sync_callbacks = {
@@ -220,11 +226,10 @@ void main(void)
 	}
 	printk("success.\n");
 
-	sync_lost = 0;
+	num_sync_lost = 0;
 	count = 0;
-	another_time_stamp = (uint64_t)k_cycle_get_32();
-	//printk("time_stamp: %04x\n", time_stamp);
-	printk("start time stamp, another_time_stamp: %llu\n", another_time_stamp);
+	start_time_stamp = (uint64_t)k_cycle_get_32();
+	printk("start_time_stamp: %llu\n", start_time_stamp);
 
 	do {
 #if defined(HAS_LED)
@@ -283,12 +288,18 @@ void main(void)
 #endif /* HAS_LED */
 
 		printk("Waiting for periodic sync lost...\n");
-		err = k_sem_take(&sem_per_sync_lost, K_FOREVER);
-		if (err) {
-			printk("failed (err %d)\n", err);
-			return;
+		// do while k_sem_take?
+		while (k_sem_take(&sem_per_sync_lost, K_NO_WAIT) != 0) {
+			printk("count: %d\n", count);
+			printk("time_stamp: %llu\n", k_ticks_to_ms_floor64(time_stamp));
+			k_sleep(K_SECONDS(1));
 		}
-		sync_lost = sync_lost + 1;
+		// err = k_sem_take(&sem_per_sync_lost, K_FOREVER);
+		// if (err) {
+		// 	printk("failed (err %d)\n", err);
+		// 	return;
+		// }
+		num_sync_lost = num_sync_lost + 1;
 		printk("Periodic sync lost.\n");
 	} while (true);
 }
